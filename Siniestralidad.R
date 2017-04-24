@@ -15,7 +15,6 @@ u <- 1200 # media muestral
 s <- 900 # varianza muestral
 res <- rpois(n, lambda) # simulación siniestros sobre su cartera
 res %>% table() %>% barplot()
-p_siniestros <- dpois(seq(0,10), lambda = lambda)
 
 # ux, s2x: valores obtenidos por datos historicos
 # uy, s2y: parametros buscados para simulacion
@@ -29,7 +28,9 @@ par_log <- function(ux,s2x){
 # Simulacion Log-Normal
 mu_y <- par_log(1200,900)[[1]]
 sigma2_y <- par_log(1200,900)[[2]]
-cuantia <- exp(qnorm(runif(1000), mean = mu_y, sd = sqrt(sigma2_y)))
+# cuantia <- exp(qnorm(runif(1000), mean = mu_y, sd = sqrt(sigma2_y)))
 
 # Siniestralidad
+
+
 S <- mean(res)*mean(cuantia) # prima pura

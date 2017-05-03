@@ -1,0 +1,192 @@
+\documentclass[11pt,a4paper,oneside]{article}
+\usepackage{amsmath,amsthm,amsfonts,amssymb}
+\usepackage{pst-eucl,pstricks,pstricks-add,multido, pst-plot}
+\usepackage[utf8]{inputenc}
+%\usepackage[latin1]{inputenc}
+\usepackage[spanish,activeacute]{babel}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{times}
+\usepackage[T1]{fontenc}
+\usepackage{titlesec}
+\usepackage{url}
+\usepackage{float}
+\usepackage{cite}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{lipsum}
+\usepackage{multicol}
+\usepackage{float}
+\usepackage{lmodern}
+\usepackage{epstopdf}
+\parindent=0mm
+
+\renewcommand{\.}{\mbox{.}}
+
+\title{\scshape \Large Práctica N 1}
+\author{\scshape Diego Paul Huaraca S}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+<<eval=TRUE, echo=FALSE>>=
+options(digits=6)
+@
+
+\begin{enumerate}
+      \item Sea una variable aleatoria $X$ que se distribuye Binomial de parámetros $n=100$, $p=0.5$. Calcule:
+      \begin{itemize}
+            \item La probabilidad de que $X=0,1,\ldots,10$.
+            <<>>=
+            n <- 100
+            p <- 0.5
+            x <- seq(0,10)
+            dbinom(x, size=n, prob=p)
+            @
+            \item La probabilidad de que $X\leq 0,1,\ldots,10$.
+            <<>>=
+            n <- 100
+            p <- 0.5
+            x <- seq(0,10)
+            pbinom(x, size=n, prob=p, lower.tail = TRUE)
+            @
+            \item La probabilidad de que $X\geq 0,1,\ldots,10$.
+            <<>>=
+            n <- 100
+            p <- 0.5
+            x <- seq(0,10)
+            pbinom(x, size=n, prob=p, lower.tail = FALSE)
+            @
+            \item Construye el histograma de $X$.
+            <<fig.align='center', fig.width=5, fig.height=4.5>>=
+            hist(rbinom(2000, size=n, prob=p), breaks = seq(20,80,3), freq = TRUE, 
+                 xlab="X", ylab="Frecuencias", main = "Histograma")
+            @
+            
+            <<fig.align='center', fig.width=5, fig.height=4.5>>=
+            hist(rbinom(2000, size=n, prob=p), breaks = seq(20,80,3), freq = FALSE, 
+                 xlab="X", ylab="Probabilidades", main = "Histograma")
+            @
+            
+            \item Repite el ejercicio para $n=1000000$ y $p=\frac{1}{2}e^{-5}$, y vuelve a graficar. Qué particularidad encuentras el gráfico ? Por qué crees que sucede ?
+            <<>>=
+            n <- 1000000
+            p <- 0.5*exp(-5)
+            x <- seq(0,10)
+            dbinom(x, size=n, prob=p)
+            @
+            
+            <<>>=
+            n <- 1000000
+            p <- 0.5*exp(-5)
+            x <- seq(0,10)
+            pbinom(x, size=n, prob=p, lower.tail = TRUE)
+            @
+            
+            <<>>=
+            n <- 1000000
+            p <- 0.5*exp(-5)
+            x <- seq(0,10)
+            pbinom(x, size=n, prob=p, lower.tail = FALSE)
+            @
+            
+            <<fig.align='center', fig.width=5, fig.height=4.5>>=
+            hist(rbinom(2000000, size=n, prob=p), freq = TRUE, 
+                 xlab="X", ylab="Frecuencias", main = "Histograma")
+            @
+            
+            <<fig.align='center', fig.width=5, fig.height=4.5>>=
+            hist(rbinom(2000000, size=n, prob=p), freq = FALSE, 
+                 xlab="X", ylab="Probabilidades", main = "Histograma")
+            @
+            
+            Se evidencia que a medida que aumentamos el valor de $n$ la campana de la distribución binomial muestra una mayor simetría respecto al valor de su media, adicionalmente, al reducir la probabilidad la amplitud de la campana se disminuida, pues su desviación típica es menor.
+      \end{itemize}
+      
+      \item Sea una variable aleatoria $Y$ que se distribuye Normal de parámetros $\mu=0$, $\sigma^2=5$. Calcula:
+      \begin{itemize}
+            \item La probabilidad de que $Y=\frac{1}{2}$
+            Por definición sabemos que:
+            \begin{align*}
+            P(X=\frac{1}{2}) &= P(X\leq 2^+) - P(X\leq 2^-)\\
+                             &= \Phi\left(\frac{2^+}{\sqrt{5}}\right) - \Phi\left(\frac{2^-}{\sqrt{5}}\right)\\
+                             &=0
+            \end{align*}
+            
+            \item La probabilidad de que $Y\leq \frac{1}{2}$
+            <<>>=
+            mu <- 0
+            sigma <- sqrt(5)
+            pnorm(0.5, mean = mu, sd = sigma)
+            @
+            
+            \item La probabilidad de que $\mu-3\sigma \leq Y \leq \mu+3\sigma$
+            \begin{align*}
+            P(\mu-3\sigma \leq Y \leq \mu+3\sigma) &= P(-3\sqrt{5} \leq Y \leq 3\sqrt{5})\\
+                  &= P(Y\leq 3\sqrt{5}) -  P(Y\leq -3\sqrt{5})
+            \end{align*}
+            <<>>=
+            pnorm(3*sqrt(5), mean=0, sd=sqrt(5)) - pnorm(-3*sqrt(5), mean=0, sd=sqrt(5)) 
+            @
+            
+            Este resultado era previsible dado que por la teoría del {\bf six sigma} se conoce que la probabilidad contenida entre $-3\sigma$ y $3\sigma$ es alrededor del $99\%$.
+            
+            \item La probabilidad de que $Y\leq 0,1,\ldots,10$
+            <<>>=
+            mu <- 0
+            sigma <- sqrt(5)
+            y <- seq(0,10)
+            pnorm(y, mu, sigma, lower.tail = TRUE)
+            @
+            
+            \item La probabilidad de que $Y\geq 0,1,\ldots,10$
+            <<>>=
+            mu <- 0
+            sigma <- sqrt(5)
+            y <- seq(0,10)
+            pnorm(y, mu, sigma, lower.tail = FALSE)
+            @
+            
+            \item Encuentras algún error o anomalía ? En caso afirmativo, razona estadísticamente el por qué ?
+            
+            La probabilidad de que $Y=\frac{1}{2}$ podía ser directamente obtenido sin realizar cálculo alguno, puesto que al tratarse de una distribución continua pierde el sentido la evaluación de probabilidades sobre un punto ya que el área de una recta es cero. La recta mencionada es el resultado de la proyección de la función de densidad sobre el punto en el que se desea calcular la probabilidad.
+            
+            \item Compara las probabilidades obtenidas de la variable aleatoria $X$ e $Y$ y analiza las diferencias.
+            
+            <<fig.align='center', fig.width=6, fig.height=7>>=
+            eje <- seq(0,10)
+            x <- pbinom(eje, size=100, prob=0.5)
+            y <- pnorm(eje, mean=0, sd=sqrt(5))
+            plot(eje, x, ylim=c(0,1), col='red', type='b', ylab='Probabilidad', 
+                 xlab="")
+            par(new=TRUE)
+            plot(eje, y, ylim=c(0,1), col='blue', type='b', ylab='Probabilidad', 
+                 xlab="")
+            legend(7,0.8, c("Binomial", "Normal"), lty=c(1,1), lwd=c(2,2), 
+                   col=c("red","blue"))
+            @
+            
+            Los valores de probabilidad para $X\leq 0,1,\ldots, 10$ son cercanos al valor cero dado que estamos evaluando las probabilidades acumuladas de la cola izquierda, mismas que se encuentran muy alejadas de su media que es $50$.\newline
+            
+            Los valores de probabilidad para $Y\leq 0,1,\ldots, 10$ son superiores a $0\.5$ puesto que la media de la distribución normal es $0$, en este caso las probabilidades que evaluados al menos ya acumulan la mitad del área bajo la curva de densidad.
+            
+            \item Construye el gráfico de la función de densidad y de distribución.
+            <<fig.align='center', fig.width=5.5, fig.height=6.5>>=
+            # Función densidad
+            x <- seq(-15,15,by=0.3)
+            y <- dnorm(x, mean=0, sd=sqrt(5))
+            plot(x, y, main='Función densidad', type='l', col='red', lwd=2, 
+                 xlab='Valores', ylab='Densidad')
+            # Función distribución
+            yy <- pnorm(x, mean=0, sd=sqrt(5))
+            plot(x, yy, main='Función distribución', type='l', col='blue', lwd=2, 
+                 xlab='Valores', ylab='Densidad')
+            abline(h = 0.5, v = 0, col = "red", lty = 3)
+            @
+            
+      \end{itemize}
+\end{enumerate}
+
+
+
+\end{document}

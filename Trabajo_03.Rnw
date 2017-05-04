@@ -32,38 +32,218 @@
 <<eval=TRUE, echo=FALSE>>=
 options(digits=6)
 suppressMessages(library(fitdistrplus))
+suppressMessages(library(ggplot2))
 load("autos.RData")
 @
 
-El objetivo de la práctica es obtener un modelo GLM que permita estimar el número de siniestros que puede alcanzar un póliza en base a la información de variables dependientes.
-
-A continuación, revisaremos la base de datos proporcionada:
+El objetivo de la práctica es obtener un modelo GLM que permita estimar el número de siniestros que puede alcanzar un póliza en base a la información de variables dependientes. A continuación, revisaremos los datos proporcionados:
 <<eval=FALSE>>=
+# leemos la base de datos
 data <- read.table("autos.csv", header=TRUE, sep=";")[,-c(1,3)]
-summary(data)
+# excluimos la variable 1 y 3 dado que poseen un valor único, y no es de interés
 
-colnames(data) <- c("poliza", "siniestros", "sexo", "zona", "exp_media", "exp_max", "edad", 
-                    "cobertura", "potencia")
+# cambiamos el nombre de las variables
+colnames(data) <- c("poliza", "siniestros", "sexo", "zona", "exp_media", "exp_max", 
+                    "edad", "cobertura", "potencia")
+@
+<<>>=
+# revisamos los primeros registros
+head(data)
 @
 
 \begin{itemize}
       \item {\bf Póliza:} Número de póliza asociada al coche
       \item {\bf Siniestros:} Número de siniestros que ha tenido el coche
       \item {\bf Sexo:} Variable dicotómica que marca con 1 a las mujeres y 0 a los hombres
-      \item {\bf Zona:} Variable dicotómica que marca con 1 si la zona de conducción es urbana y con 0 el resto
-      \item {\bf Experiencia Media:} Variable dicotómica
-# V9 --> sexo: 1 mujer 0 hombre (dicot?mica)
-# V10 --> Zona conducci?n: 1 urbana 0 resto
-# V13 --> Experiencia media: 1 entre 4-14 a?os, 0 resto
-# V14 --> Experiencia max: 1 m?s de 15, 0 resto
-# V17 --> Edad: 1 30 o mas , 0 resto
-# V18 --> Coberturas adicionales: 1 si , 0 no
-# V19 --> Coberturas todo riesgo: 1 si , 0 no
-# V20 --> potencia: 1 m?s 120cv , 0 no
+      \item {\bf Zona:} Variable dicotómica que marca con 1 si la zona de conducción es urbana y 0 en caso contrario
+      \item {\bf Experiencia Media:} Variable dicotómica que marca con 1 si lleva conduciendo entre 4 y 14 años, y marca con 0 en caso contrario
+      \item {\bf Experiencia Máxima:} Variable dicotómica que marca con 1 si lleva conduciendo más de 15 años y 0 en caso contrario
+      \item {\bf Edad:} Variable dicotómica que marca con 1 si tiene 30 o más años y con 0 en caso contrario
+      \item {\bf Cobertura:} Variable dicotómica que marca con 1 si tiene cobertura y 0 en caso contrario
+      \item {\bf Potencia:} Variable dicotómica que marca con 1 si el coche tiene potencia mayor a 120 CV y con 0 en caso contrario
 \end{itemize}
 
+\section{Variable dependiente: Siniestros}
+
+Intentaremos ajustar la variable dependientes \emph{siniestros} a una distribución \emph{Poisson} y a una distribución \emph{Binomial Negativa}, posteriormente en base a algún criterio evaluaremos que distribución se ajusta mejor a la variable.
+<<fig.align='center', fig.width=5, fig.height=3.5, echo=FALSE>>=
+ggplot(data, aes(x=siniestros)) + geom_bar() + labs(y='Número de pólizas', 
+                                                    x='Siniestros ocurridos')
+#Frecuencia
+table(data$siniestros)
+@
+
+Algunos estadísticos de interés sobre la variable analizada:
+<<>>=
+# Media
+mean(data[["siniestros"]])
+# Varianza
+n_var <- function(vec){((length(vec)-1)/length(vec))*var(vec)}
+n_var(data[["siniestros"]])
+@
+
+
+\subsection{Poisson}
+Iniciamos estimando el parámetro $\lambda$ que mejor ajusta la distribución de siniestros:
+<<>>=
+a_pois <- fitdist(data[["siniestros"]], "pois", method="mme")
+summary(a_pois)
+@
+
+Construimos la distribución teórica con el $\lambda$ obtenido:
+<<>>=
+p1 <- trunc(length(data[["siniestros"]])*dpois(0,a_pois[[1]][[1]]))
+p2 <- trunc(length(data[["siniestros"]])*dpois(1,a_pois[[1]][[1]]))
+p3 <- trunc(length(data[["siniestros"]])*dpois(2,a_pois[[1]][[1]]))
+p4 <- trunc(length(data[["siniestros"]])*dpois(3,a_pois[[1]][[1]]))
+# concatenamos los resultados
+n_siniestros <- c(rep(0,p1+3),rep(1,p2),rep(2,p3),rep(3,p4))
+@
+
+<<echo=FALSE, fig.align='center', fig.height=4, fig.width=4.5>>=
+barplot(table(n_siniestros), xlab='Siniestros', main='Ajuste Poisson')
+table(n_siniestros)
+@
+
+Contrastamos mediante la prueba Ji-cuadrado 
+<<warning=FALSE>>=
+table(n_siniestros, data$siniestros)
+chisq.test(table(n_siniestros, data$siniestros))
+cor(table(n_siniestros), table(data$siniestros))
+@
+
+
+\subsection{Binomial Negativa}
+Iniciamos estimando los parámetros $r$ y $p$ que mejor ajusta la distribución de siniestros:
+<<>>=
+a_nbin <- fitdist(data[["siniestros"]], "nbinom", method="mme")
+summary(a_nbin)
+@
+
+Construimos la distribución teórica con $r$ y $p$ obtenidos:
+<<>>=
+p1 <- trunc(length(data[["siniestros"]])*dnbinom(0,size=a_nbin[[1]][[1]], 
+                                                 mu=a_nbin[[1]][[2]]))
+p2 <- trunc(length(data[["siniestros"]])*dnbinom(1,size=a_nbin[[1]][[1]], 
+                                                 mu=a_nbin[[1]][[2]]))
+p3 <- trunc(length(data[["siniestros"]])*dnbinom(2,size=a_nbin[[1]][[1]], 
+                                                 mu=a_nbin[[1]][[2]]))
+p4 <- trunc(length(data[["siniestros"]])*dnbinom(3,size=a_nbin[[1]][[1]], 
+                                                 mu=a_nbin[[1]][[2]]))
+# concatenamos los resultados
+n_siniestros <- c(rep(0,p1+2),rep(1,p2),rep(2,p3),rep(3,p4))
+@
+
+<<echo=FALSE, fig.align='center', fig.height=4, fig.width=4.5>>=
+barplot(table(n_siniestros), xlab='Siniestros', main='Ajuste Binomial Negativa')
+table(n_siniestros)
+@
+
+Los resultados anteriores muestran un buen ajuste con ambas distribuciones, la correlación obtenida
+
+Contrastamos mediante la prueba Ji-cuadrado 
+<<warning=FALSE>>=
+table(n_siniestros, data$siniestros)
+chisq.test(table(n_siniestros, data$siniestros))
+cor(table(n_siniestros), table(data$siniestros))
+@
+
+Los contrastes Ji-cuadrado realizado sobre la distribución ajustada y la original muestran una mayor dependencia en el caso de Poisson, adicionalmente, el hecho de estimar un parámetro hace que nos decidamos por ajustar mediante dicha distribución a la variable dependiente.
 
 \section{Prueba de independencia Ji-Cuadrado $\chi^2$}
+
+Emplearemos la prueba de independencia Ji-Cuadrado $\chi^2$ para probar si dos variables aleatorias categóricas son independientes (se evalúa la variable dependiente \emph{siniestros}, con cada una de las variables independientes). El cálculo del estadístico $\chi^2$ de la prueba está basado en la diferencia entre las frecuencias observadas y las frecuencias esperadas dada la independencia. Un valor del \emph{p-value} superior al 0.05 implica que las variables son independientes.
+
+\subsection{Sexo}
+<<warning=FALSE>>=
+chisq.test(table(data$sexo, data$siniestros))
+@
+Las variables \emph{sexo} y \emph{siniestros} son independientes.
+
+\subsection{Zona}
+<<warning=FALSE>>=
+chisq.test(table(data$zona, data$siniestros))
+@
+Las variables \emph{zona} y \emph{siniestros} son independientes.
+
+\subsection{Experiencia media}
+<<warning=FALSE>>=
+chisq.test(table(data$exp_media, data$siniestros))
+@
+Las variables \emph{experiencia media} y \emph{siniestros} {\bf no} son independientes.
+
+\subsection{Experiencia máxima}
+<<warning=FALSE>>=
+chisq.test(table(data$exp_max, data$siniestros))
+@
+Las variables \emph{experiencia máxima} y \emph{siniestros} {\bf no} son independientes.
+
+\subsection{Edad}
+<<warning=FALSE>>=
+chisq.test(table(data$edad, data$siniestros))
+@
+Las variables \emph{edad} y \emph{siniestros} {\bf no} son independientes.
+
+\subsection{Cobertura}
+<<warning=FALSE>>=
+chisq.test(table(data$cobertura, data$siniestros))
+@
+Las variables \emph{cobertura} y \emph{siniestros} {\bf no} son independientes.
+
+\subsection{Potencia}
+<<warning=FALSE>>=
+chisq.test(table(data$potencia, data$siniestros))
+@
+Las variables \emph{potencia} y \emph{siniestros} {\bf no} son independientes.\newline
+
+El estadístico $\chi^2$ nos ha facilitado identificar las variables que podemos incluir dentro del modelo GLM que estimará el número de siniestros.
+
+\section{Modelo}
+
+En la sección anterior obtuvimos que las variables más predictivas son: experiencia media, experiencia máxima, cobertura, potencia y edad.\newline
+
+Iniciamos el modelo ingresando las variables antes mencionadas:
+<<echo=FALSE>>=
+modelo1 <- glm(siniestros ~ exp_media + exp_max + cobertura + potencia + edad, 
+    data=data, family = poisson())
+
+summary(modelo1)
+@
+
+Retiramos la variable \emph{edad} dado que su significacia es superior a 0.05, lo cual implica que su coeficiente asociado es 0.
+
+<<echo=FALSE>>=
+modelo2 <- glm(siniestros ~ exp_media + exp_max + cobertura + potencia, 
+    data=data, family = poisson())
+
+summary(modelo2)
+@
+
+Para el modelo 2 todas sus variables son significativas, ahora obtendremos el porcentaje de varianza explicada con el modelo
+<<>>=
+((modelo2$null.deviance-modelo2$deviance)/modelo2$null.deviance)*100
+@
+
+\section{Predicciones}
+
+A continuación, realizamos las predicciones con el modelo obtenido en el paso anterior:
+<<>>=
+(coef <- modelo2$coefficients)
+new_data <- data[,c("exp_media", "exp_max", "cobertura", "potencia")]
+prediccion <- exp(coef[1] + coef[2]*data$exp_media + coef[3]*data$exp_max +
+                  coef[4]*data$cobertura + coef[5]*data$potencia)
+
+table(round(prediccion,2))
+@
+
+Evaluemos dos casos extremos, el primero que lo tiene todo y otro que no tiene nada
+<<>>=
+todo <- c(1,1,1,1)
+(prediccion <- exp(coef[1])*exp(todo%*%coef[-1]))
+ 
+nada <- c(0,0,0,0)
+(prediccion <- exp(coef[1])*exp(nada%*%coef[-1]))
+@
 
 
 
